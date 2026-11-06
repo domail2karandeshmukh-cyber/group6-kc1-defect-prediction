@@ -14,16 +14,17 @@ docker info
 
 If `docker info` fails, Docker Desktop is not ready. If Docker cannot be found, open/reinstall Docker Desktop.
 
-## 2. Extract the provided project
+## 2. Get the project folder
 
-Double-click the downloaded ZIP in Finder. Open Terminal and drag the extracted `Group6_KC1_Docker_Project_FINAL` folder onto a command after `cd `, then press Enter.
-
-Example if it is in Downloads:
+**From GitHub** (your GitHub account needs access to the private repository):
 
 ```bash
-cd ~/Downloads/Group6_KC1_Docker_Project_FINAL
+git clone https://github.com/domail2karandeshmukh-cyber/group6-kc1-defect-prediction.git
+cd group6-kc1-defect-prediction
 ls
 ```
+
+**From a ZIP:** double-click the ZIP in Finder. In Terminal, type `cd ` (with a space), drag the extracted project folder onto the Terminal window, press Enter, then run `ls`.
 
 You should see `Dockerfile`, `compose.yaml`, `requirements.txt`, `train.py`, `api_app.py`, `streamlit_app.py`.
 
@@ -112,10 +113,16 @@ Take screenshots of **your actual run**, not simulated screenshots.
 If the teacher explicitly asks for a transferable image rather than files to build it:
 
 ```bash
-docker save -o group6-kc1-image.tar group6-kc1:latest
+docker save -o Group6_KC1_Docker_Image.tar group6-kc1:latest
 ```
 
-This produces a large image archive on **your Mac** after the build. The source ZIP here is much smaller and is *not* the same thing as an exported image. A `docker push` to Docker Hub is a separate step requiring an account and explicit publishing instructions.
+This produces a large image archive on **your Mac** after the build (309 MB for the team's build). The source code is much smaller and is *not* the same thing as an exported image. The `.tar` is not stored in GitHub; share it separately. On another computer, load it with:
+
+```bash
+docker load -i Group6_KC1_Docker_Image.tar
+```
+
+A `docker push` to Docker Hub is a separate step that needs a Docker Hub account and explicit permission to publish. The exact commands are in `README.md`, section *Sharing the Docker image*.
 
 ## 8. Recreate the Docker packaging manually
 

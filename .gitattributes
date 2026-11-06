@@ -1,0 +1,4 @@
+# Store text files with LF line endings in the repository
+* text=auto
+# Shell scripts must keep LF endings so bash can run them after a clone on any system
+*.sh text eol=lf
