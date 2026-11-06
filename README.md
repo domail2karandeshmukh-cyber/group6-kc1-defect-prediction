@@ -1,5 +1,7 @@
 # KC1 Software Defect Prediction — ESAIP MSc Group 6
 
+[![KC1 CI](https://github.com/domail2karandeshmukh-cyber/group6-kc1-defect-prediction/actions/workflows/kc1-ci-cd.yml/badge.svg?branch=main)](https://github.com/domail2karandeshmukh-cyber/group6-kc1-defect-prediction/actions/workflows/kc1-ci-cd.yml)
+
 This project predicts whether a software module is likely to contain defects, using 21 static
 code metrics from the NASA PROMISE **KC1** dataset. It covers the complete workflow: training
 and comparing models, tracking every experiment in **MLflow**, serving the selected model
@@ -25,6 +27,7 @@ with **Docker** and **Docker Compose**.
 | Prediction API | FastAPI + Uvicorn: `GET /health`, `POST /predict` |
 | User interface | Streamlit |
 | Containers | Docker image `group6-kc1:latest`, four Docker Compose services |
+| CI/CD | GitHub Actions: automatic CI on every push and pull request; image publishing is manual and off by default |
 
 ## Contents
 
@@ -37,11 +40,12 @@ with **Docker** and **Docker Compose**.
 7. [Prediction workflow](#prediction-workflow)
 8. [Results](#results)
 9. [Testing](#testing)
-10. [Sharing the Docker image](#sharing-the-docker-image)
-11. [Repository structure](#repository-structure)
-12. [What is not in Git](#what-is-not-in-git)
-13. [Troubleshooting](#troubleshooting)
-14. [Limitations](#limitations)
+10. [CI/CD with GitHub Actions](#cicd-with-github-actions)
+11. [Sharing the Docker image](#sharing-the-docker-image)
+12. [Repository structure](#repository-structure)
+13. [What is not in Git](#what-is-not-in-git)
+14. [Troubleshooting](#troubleshooting)
+15. [Limitations](#limitations)
 
 ## Architecture
 
@@ -484,6 +488,71 @@ ARTIFACT_DIR=artifacts python -m pytest -q tests
 
 For a check of the running containers, use `bash scripts/verify_mac.sh` (step 5 above).
 
+The same tests also run automatically in GitHub Actions on every push and pull request (see
+[CI/CD with GitHub Actions](#cicd-with-github-actions)).
+
+## CI/CD with GitHub Actions
+
+The workflow [`.github/workflows/kc1-ci-cd.yml`](.github/workflows/kc1-ci-cd.yml) automates the
+build, training and test commands above. Its runs are listed under
+[Actions → KC1 - CI and manual CD](https://github.com/domail2karandeshmukh-cyber/group6-kc1-defect-prediction/actions/workflows/kc1-ci-cd.yml),
+and the badge at the top of this page shows the result of the latest run on `main`.
+
+```mermaid
+flowchart LR
+    trigger(["push or pull request to main<br/>or manual Run workflow"]) --> build
+    subgraph ci["CI job · fresh GitHub-hosted Ubuntu runner"]
+        build["build image"] --> train["train model"] --> tests["pytest"] --> start["start API,<br/>Streamlit, MLflow"] --> checks["health checks and<br/>prediction smoke test"]
+    end
+    checks -- "only on a manual run on main<br/>with publishing ticked" --> cd["CD job<br/>push image to GHCR"]
+```
+
+### CI: what runs automatically
+
+CI starts on every push to `main`, on every pull request to `main`, and whenever someone clicks
+**Run workflow**. Each run uses a fresh x86-64 Ubuntu machine from GitHub, so it also shows that
+the project works outside the team's Mac.
+
+| Workflow step | What it does | What a green tick proves |
+|---|---|---|
+| Validate Docker Compose configuration | `docker compose config --quiet` | `compose.yaml` is valid |
+| Build Docker image | `docker compose build` | the image builds from a clean checkout |
+| Train model and create MLflow artifacts | `docker compose --profile train run --rm trainer` | the dataset downloads, the models train and the MLflow runs are recorded |
+| Confirm trained model files exist | `test -s artifacts/...` | the model, its configuration and the sample input were exported |
+| Run API unit / integration tests | `pytest` inside the project image | both API tests pass against the newly trained model |
+| Start API, Streamlit and MLflow | `docker compose up -d` | the three services start |
+| Wait for all three web services | polls `/health`, `/_stcore/health` and `/` | FastAPI, Streamlit and MLflow all answer |
+| Smoke test actual API prediction | `POST /predict` with the KC1 sample | the API returns class 0 or 1 and a probability between 0 and 1 |
+| Write results to the run summary | reads the training outputs | the run page shows the selected model, GMM components, sample prediction and model comparison |
+
+If a step fails, the run turns red, the remaining checks are skipped and *Show logs if checks
+fail* prints the container logs. *Stop test containers* always runs at the end.
+
+### CD: manual and off by default
+
+The `cd` job can push the image to GitHub Container Registry as
+`ghcr.io/domail2karandeshmukh-cyber/group6-kc1-defect-prediction:ci-demo`. It runs only when
+**all** of these are true:
+
+1. the workflow was started by hand with **Run workflow**,
+2. on the `main` branch,
+3. with the box *After security review, publish the Docker image to GitHub Container Registry?*
+   ticked (it is unticked by default),
+4. and the CI job of that same run passed.
+
+On pushes and pull requests the `cd` job always shows as *skipped*. It is kept off because Docker
+Scout reports known vulnerabilities in the image (see
+[Docker Implementation Evidence](#docker-implementation-evidence)): publish only after reviewing
+or fixing them. Even when used, CD only stores an image in a registry; it is not a live deployment,
+and the image does not contain the trained model.
+
+### Run the pipeline by hand
+
+1. Open the repository's **Actions** tab and select **KC1 - CI and manual CD**.
+2. Click **Run workflow**, keep the branch `main` and leave the publishing box unticked.
+3. Click the green **Run workflow** button, then open the new run. Each step shows a green tick or
+   a red cross, and the run's summary page shows the results table.
+
 ## Sharing the Docker image
 
 Git stores the source code; the built image is shared in one of these ways:
@@ -533,10 +602,16 @@ Git stores the source code; the built image is shared in one of these ways:
    docker compose up -d
    ```
 
+5. **GitHub Container Registry (prepared, not used).** The CI/CD workflow can push
+   `ghcr.io/domail2karandeshmukh-cyber/group6-kc1-defect-prediction:ci-demo`, but only on a manual
+   run with publishing ticked; see [CI/CD with GitHub Actions](#cicd-with-github-actions).
+
 ## Repository structure
 
 ```text
 group6-kc1-defect-prediction/
+├── .github/workflows/
+│   └── kc1-ci-cd.yml       GitHub Actions: CI on every push and PR, manual CD (off by default)
 ├── README.md               project documentation (this file)
 ├── MANUAL_BUILD_GUIDE.md   step-by-step build and presentation guide
 ├── TESTING_AND_VIVA.md     short questions and answers for the oral presentation
