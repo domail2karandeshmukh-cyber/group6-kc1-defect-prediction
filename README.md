@@ -32,7 +32,7 @@ with **Docker** and **Docker Compose**.
 2. [Dataset](#dataset)
 3. [Models and model selection](#models-and-model-selection)
 4. [Experiment tracking with MLflow](#experiment-tracking-with-mlflow)
-5. [Docker image](#docker-image)
+5. [Docker image](#docker-image), including the [Docker Implementation Evidence](#docker-implementation-evidence) screenshot
 6. [Build and run](#build-and-run)
 7. [Prediction workflow](#prediction-workflow)
 8. [Results](#results)
@@ -178,6 +178,47 @@ docker image ls group6-kc1                    # the image exists, with its size
 docker history group6-kc1:latest              # layers created by the Dockerfile
 docker image inspect group6-kc1:latest --format '{{.Os}}/{{.Architecture}}'   # platform built for
 ```
+
+### Docker Implementation Evidence
+
+Screenshot from Docker Desktop on the team's MacBook, taken from the original working project:
+
+![Docker Image and Build Layers](screenshots/docker-image-layers.png)
+
+What the screenshot shows:
+
+- **Our image, `group6-kc1:latest`** (image ID `e42687fb9996`), built from this repository's
+  `Dockerfile` with `docker compose build`.
+- **Status `IN USE`:** Docker Desktop shows this badge when containers have been created from the
+  image; in this project those are the `api`, `ui` and `mlflow` services started with
+  `docker compose up -d`.
+- **Base image `python:3.11-slim`:** the official, minimal Debian-based Python 3.11 image named in
+  the `FROM` line. Its layers (0–9) are collapsed in the screenshot.
+- **Image layers and build instructions:** the image has 18 layers. Layers 10–17 are added by our
+  Dockerfile, one per instruction:
+
+| Layer | Dockerfile instruction | Size shown in Docker Desktop |
+|---:|---|---:|
+| 10 | `ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 ARTIFACT_DIR=/app/artifacts` | 0 B |
+| 11 | `WORKDIR /app` | 8.19 KB |
+| 12 | `COPY requirements.txt ./` | 12.29 KB |
+| 13 | `RUN python -m pip install --upgrade pip && python -m pip install -r requirements.txt` | 1.01 GB |
+| 14 | `COPY api_app.py streamlit_app.py train.py ./` | 32.77 KB |
+| 15 | `RUN mkdir -p /app/artifacts` | 12.29 KB |
+| 16 | `EXPOSE 8000 8501 5000` | 0 B |
+| 17 | `CMD ["uvicorn", "api_app:app", "--host", "0.0.0.0", "--port", "8000"]` | 0 B |
+
+Almost all of the image size comes from layer 13, the installed Python libraries (MLflow,
+scikit-learn, pandas, Streamlit, FastAPI and their dependencies). Our application code adds only
+32.77 KB, and the trained model is not inside the image: it is mounted from `./artifacts` at run
+time.
+
+**Security findings.** The screenshot also shows Docker Desktop's Docker Scout vulnerability
+summary, so this image is **not** vulnerability-free. Ordered critical, high, medium, low and
+unspecified, the counts are 0 / 4 / 2 / 27 / 0 for the `python:3.11-slim` base layers and
+0 / 1 / 1 / 1 / 0 for the layers added by our Dockerfile; the red marker on layer 13 shows that our
+own findings come from the Python packages installed there. `docker scout cves group6-kc1:latest`
+lists the affected packages and any fixed versions.
 
 ## Build and run
 
@@ -363,6 +404,8 @@ rejected. An invalid request returns HTTP **422** with a description of the prob
 - `docker save -o Group6_KC1_Docker_Image.tar group6-kc1:latest` exported the image (**309 MB**).
 - `Group6_KC1_Submission.zip` (**310 MB**: image, model artifacts and project source) was created
   and checked with `unzip -t` without errors.
+- Docker Desktop screenshot of the built image and its layers: see
+  [Docker Implementation Evidence](#docker-implementation-evidence).
 
 ### Model comparison (held-out test set: 243 modules, 63 defective; threshold 0.50)
 
@@ -506,6 +549,8 @@ group6-kc1-defect-prediction/
 ├── scripts/
 │   ├── start_mac.sh        build, train, start and health-check in one command
 │   └── verify_mac.sh       checks image, containers, endpoints and a sample prediction
+├── screenshots/
+│   └── docker-image-layers.png   Docker Desktop view of group6-kc1:latest and its layers
 ├── tests/
 │   └── test_api.py         API smoke tests (need trained artifacts)
 ├── artifacts/              filled by the trainer; only .gitkeep is in Git
@@ -553,6 +598,10 @@ group6-kc1-defect-prediction/
   `docker run --rm group6-kc1:latest python -m pip freeze > requirements-lock.txt`.
 - The API has no authentication and is published on `127.0.0.1` only: it is a local classroom
   demonstration, not an internet-facing service.
+- Docker Scout reports known vulnerabilities in the `python:3.11-slim` base layers and in the
+  installed Python packages (see [Docker Implementation Evidence](#docker-implementation-evidence)).
+  Updating the base image and the affected packages, then rebuilding and re-scanning, would be the
+  next step before any production use.
 
 ---
 
