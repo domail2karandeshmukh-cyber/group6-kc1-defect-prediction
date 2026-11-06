@@ -1,0 +1,16 @@
+.git
+**/__pycache__
+**/*.pyc
+*.ipynb
+*.zip
+*.pdf
+.env
+.venv
+artifacts/*
+!artifacts/.gitkeep
+README.md
+TESTING_AND_VIVA.md
+tests/
+scripts/
+.gitignore
+MANUAL_BUILD_GUIDE.md

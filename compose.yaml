@@ -1,0 +1,45 @@
+name: group6-kc1
+
+x-common: &common
+  image: group6-kc1:latest
+  build: .
+  environment:
+    ARTIFACT_DIR: /app/artifacts
+  volumes:
+    - ./artifacts:/app/artifacts
+
+services:
+  trainer:
+    <<: *common
+    profiles: [train]
+    command: ["python", "train.py"]
+
+  api:
+    <<: *common
+    command: ["uvicorn", "api_app:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  ui:
+    <<: *common
+    command: ["streamlit", "run", "streamlit_app.py", "--server.address", "0.0.0.0", "--server.port", "8501", "--server.headless", "true"]
+    environment:
+      ARTIFACT_DIR: /app/artifacts
+      API_BASE_URL: http://api:8000
+    ports:
+      - "127.0.0.1:8501:8501"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  mlflow:
+    <<: *common
+    command: ["mlflow", "ui", "--backend-store-uri", "sqlite:////app/artifacts/mlflow.db", "--host", "0.0.0.0", "--port", "5000"]
+    ports:
+      - "127.0.0.1:5000:5000"

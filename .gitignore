@@ -1,0 +1,15 @@
+artifacts/*
+!artifacts/.gitkeep
+__pycache__/
+*.pyc
+.venv/
+.env
+*.tar
+*.log
+.DS_Store
+
+*.zip
+*.tar.gz
+*.joblib
+*.pkl
+*.db
