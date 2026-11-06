@@ -1,0 +1,109 @@
+name: KC1 - CI and manual CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish_image:
+        description: 'After security review, publish the Docker image to GitHub Container Registry?'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Build, train, test and verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out project
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose configuration
+        run: docker compose config --quiet
+
+      - name: Build Docker image
+        run: docker compose build
+
+      - name: Train model and create MLflow artifacts
+        run: docker compose --profile train run --rm trainer
+
+      - name: Confirm trained model files exist
+        run: |
+          test -s artifacts/deployment_config.json
+          test -s artifacts/kc1_defect_pipeline.joblib
+          test -s artifacts/streamlit_defaults.json
+
+      - name: Run API unit / integration tests
+        run: |
+          docker run --rm \
+            -v "$PWD/artifacts:/app/artifacts:ro" \
+            -v "$PWD/tests:/app/tests:ro" \
+            group6-kc1:latest sh -c 'python -m pip install --quiet "pytest>=8,<10" "httpx>=0.27,<1" && python -m pytest -q /app/tests'
+
+      - name: Start API, Streamlit and MLflow
+        run: docker compose up -d
+
+      - name: Wait for all three web services
+        shell: bash
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8000/health >/dev/null && \
+               curl -fsS http://127.0.0.1:8501/_stcore/health >/dev/null && \
+               curl -fsS http://127.0.0.1:5000/ >/dev/null; then
+              echo "API, Streamlit and MLflow are responding"
+              exit 0
+            fi
+            echo "Waiting for services ($attempt/60)"
+            sleep 3
+          done
+          echo 'Services did not become ready'
+          exit 1
+
+      - name: Smoke test actual API prediction
+        run: |
+          curl -fsS http://127.0.0.1:8000/health
+          RESPONSE="$(curl -fsS -X POST http://127.0.0.1:8000/predict \
+            -H 'Content-Type: application/json' \
+            --data-binary @artifacts/streamlit_defaults.json)"
+          printf '%s\n' "$RESPONSE" | python3 -c 'import json,sys; r=json.load(sys.stdin); assert r["prediction"] in (0,1); assert 0<=r["defect_probability"]<=1; print("Sample prediction verified:",r["label"],r["defect_probability"])'
+
+      - name: Show logs if checks fail
+        if: failure()
+        run: docker compose logs --tail=120 || true
+
+      - name: Stop test containers
+        if: always()
+        run: docker compose down --remove-orphans || true
+
+  cd:
+    name: Manual delivery to GHCR (not a live deployment)
+    needs: ci
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_image == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out verified source
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository }}:ci-demo
