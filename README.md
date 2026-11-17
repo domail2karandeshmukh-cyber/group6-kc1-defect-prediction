@@ -1,4 +1,4 @@
-# KC1 Software Defect Prediction — ESAIP MSc Group 6
+# KC1 software defect prediction (ESAIP MSc Group 6)
 
 [![KC1 CI](https://github.com/domail2karandeshmukh-cyber/group6-kc1-defect-prediction/actions/workflows/kc1-ci-cd.yml/badge.svg?branch=main)](https://github.com/domail2karandeshmukh-cyber/group6-kc1-defect-prediction/actions/workflows/kc1-ci-cd.yml)
 
@@ -9,8 +9,8 @@ through a **FastAPI** REST API, offering a **Streamlit** interface, and packagin
 with **Docker** and **Docker Compose**.
 
 > **This repository contains source code and documentation only.** The dataset copy, trained
-> model, MLflow database and exported Docker image are produced locally and are deliberately
-> kept out of Git (see [What is not in Git](#what-is-not-in-git)).
+> model, MLflow database, and exported Docker image are produced locally and are deliberately
+> kept out of Git (see [What isn't in Git](#what-is-not-in-git)).
 
 ## Project at a glance
 
@@ -43,7 +43,7 @@ with **Docker** and **Docker Compose**.
 10. [CI/CD with GitHub Actions](#cicd-with-github-actions)
 11. [Sharing the Docker image](#sharing-the-docker-image)
 12. [Repository structure](#repository-structure)
-13. [What is not in Git](#what-is-not-in-git)
+13. [What isn't in Git](#what-is-not-in-git)
 14. [Troubleshooting](#troubleshooting)
 15. [Limitations](#limitations)
 
@@ -74,8 +74,8 @@ flowchart TB
 
 - **One image, four services.** `compose.yaml` builds a single image, `group6-kc1:latest`, and
   runs it four times with different commands.
-- **Train once, serve many times.** The `trainer` service only runs when it is called with the
-  `train` profile. It writes the fitted pipeline, its configuration and the MLflow runs to
+- **Train once, serve many times.** The `trainer` service only runs when it's called with the
+  `train` profile. It writes the fitted pipeline, its configuration, and the MLflow runs to
   `./artifacts`, which is mounted into every container at `/app/artifacts`. The API loads that
   pipeline at start-up and never retrains.
 - **Service-to-service networking.** Streamlit calls the API at `http://api:8000`; Docker's
@@ -129,7 +129,7 @@ flowchart TB
 Outcome: **Balanced Logistic Regression** with a decision threshold of **0.50**.
 
 **Unsupervised comparison (GMM).** The 21 features are standardised and Gaussian Mixture Models
-with 2, 3 and 4 components (diagonal covariance, 10 initialisations) are fitted **without the
+with 2, 3, and 4 components (diagonal covariance, 10 initialisations) are fitted **without the
 defect labels**. The number of components with the lowest BIC is kept (**4**). Labels are used
 only afterwards, to describe the defect rate inside each component.
 
@@ -172,9 +172,9 @@ adds 10 more runs to the same experiment.
 | Application files | `api_app.py`, `streamlit_app.py`, `train.py` |
 | Exposed ports | 8000 (API), 8501 (Streamlit), 5000 (MLflow) |
 | Default command | `uvicorn api_app:app --host 0.0.0.0 --port 8000` |
-| Not inside the image | dataset, trained model and MLflow runs: they live in the mounted `./artifacts` folder |
+| Not inside the image | dataset, trained model, and MLflow runs: they live in the mounted `./artifacts` folder |
 
-`.dockerignore` keeps documentation, tests, scripts, local artifacts and secrets out of the build
+`.dockerignore` keeps documentation, tests, scripts, local artifacts, and secrets out of the build
 context, so the image contains only what it needs to run.
 
 ```bash
@@ -183,7 +183,7 @@ docker history group6-kc1:latest              # layers created by the Dockerfile
 docker image inspect group6-kc1:latest --format '{{.Os}}/{{.Architecture}}'   # platform built for
 ```
 
-### Docker Implementation Evidence
+### Docker implementation evidence
 
 Screenshot from Docker Desktop on the team's MacBook, taken from the original working project:
 
@@ -214,7 +214,7 @@ What the screenshot shows:
 
 Almost all of the image size comes from layer 13, the installed Python libraries (MLflow,
 scikit-learn, pandas, Streamlit, FastAPI and their dependencies). Our application code adds only
-32.77 KB, and the trained model is not inside the image: it is mounted from `./artifacts` at run
+32.77 KB, and the trained model isn't inside the image: it's mounted from `./artifacts` at run
 time.
 
 **Security findings.** The screenshot also shows Docker Desktop's Docker Scout vulnerability
@@ -293,14 +293,14 @@ Health response:
 {"status":"ok","model_loaded":true,"model":"Logistic balanced","threshold":0.5,"feature_count":21}
 ```
 
-`scripts/verify_mac.sh` checks the image, the containers, the three web endpoints and a sample
-prediction. It only needs Bash, curl and Docker.
+`scripts/verify_mac.sh` checks the image, the containers, the three web endpoints, and a sample
+prediction. It only needs Bash, curl, and Docker.
 
 ### 6. Open the interfaces
 
 | Interface | URL | What to do |
 |---|---|---|
-| Streamlit | http://localhost:8501 | Click **Load KC1 sample**, then **Predict defect** |
+| Streamlit | http://localhost:8501 | Select **Load KC1 sample**, then **Predict defect** |
 | FastAPI (Swagger) | http://localhost:8000/docs | Try `GET /health` and `POST /predict` |
 | MLflow | http://localhost:5000 | Open the experiment `Group6_KC1_Defect_Prediction` |
 
@@ -402,11 +402,11 @@ rejected. An invalid request returns HTTP **422** with a description of the prob
   **21** features and exported the model.
 - Selected model: **Balanced Logistic Regression**, test **F1 = 0.500** at threshold **0.50**;
   the GMM selected **4** components by BIC.
-- `docker compose up -d` started the API, Streamlit and MLflow; `docker compose ps` showed the
+- `docker compose up -d` started the API, Streamlit, and MLflow; `docker compose ps` showed the
   API **healthy** and all three services running.
 - Streamlit sample prediction: **Class 1 (Defective)**, model-estimated probability **72.3 %**.
 - `docker save -o Group6_KC1_Docker_Image.tar group6-kc1:latest` exported the image (**309 MB**).
-- `Group6_KC1_Submission.zip` (**310 MB**: image, model artifacts and project source) was created
+- `Group6_KC1_Submission.zip` (**310 MB**: image, model artifacts, and project source) was created
   and checked with `unzip -t` without errors.
 - Docker Desktop screenshot of the built image and its layers: see
   [Docker Implementation Evidence](#docker-implementation-evidence).
@@ -456,13 +456,13 @@ of `artifacts/model_comparison.csv`, `threshold_comparison.csv`, `gmm_bic.csv` a
 `gmm_component_summary.csv` from a second run of this repository on 6 November 2026, made from a
 clean copy in a Python 3.11 environment on Linux (outside Docker; scikit-learn 1.9.1,
 MLflow 3.18.0, FastAPI 0.162.0, Streamlit 1.67.0). That run reproduced the team's results
-exactly — 1,212 rows, Balanced Logistic Regression, F1 0.500, threshold 0.50, 4 GMM components and
-72.3 % for the Streamlit sample — and both API tests passed. Rebuilding with other library
+exactly—1,212 rows, Balanced Logistic Regression, F1 0.500, threshold 0.50, 4 GMM components and
+72.3 % for the Streamlit sample—and both API tests passed. Rebuilding with other library
 versions may give slightly different numbers.
 
 ## Testing
 
-`tests/test_api.py` holds two API smoke tests. They are integration tests: they need the trained
+`tests/test_api.py` holds two API smoke tests. They're integration tests: they need the trained
 artifacts and are skipped automatically when no trained model is found.
 
 | Test | What it checks |
@@ -494,7 +494,7 @@ The same tests also run automatically in GitHub Actions on every push and pull r
 ## CI/CD with GitHub Actions
 
 The workflow [`.github/workflows/kc1-ci-cd.yml`](.github/workflows/kc1-ci-cd.yml) automates the
-build, training and test commands above. Its runs are listed under
+build, training, and test commands above. Its runs are listed under
 [Actions → KC1 - CI and manual CD](https://github.com/domail2karandeshmukh-cyber/group6-kc1-defect-prediction/actions/workflows/kc1-ci-cd.yml),
 and the badge at the top of this page shows the result of the latest run on `main`.
 
@@ -517,13 +517,13 @@ the project works outside the team's Mac.
 |---|---|---|
 | Validate Docker Compose configuration | `docker compose config --quiet` | `compose.yaml` is valid |
 | Build Docker image | `docker compose build` | the image builds from a clean checkout |
-| Train model and create MLflow artifacts | `docker compose --profile train run --rm trainer` | the dataset downloads, the models train and the MLflow runs are recorded |
-| Confirm trained model files exist | `test -s artifacts/...` | the model, its configuration and the sample input were exported |
+| Train model and create MLflow artifacts | `docker compose --profile train run --rm trainer` | the dataset downloads, the models train, and the MLflow runs are recorded |
+| Confirm trained model files exist | `test -s artifacts/...` | the model, its configuration, and the sample input were exported |
 | Run API unit / integration tests | `pytest` inside the project image | both API tests pass against the newly trained model |
-| Start API, Streamlit and MLflow | `docker compose up -d` | the three services start |
-| Wait for all three web services | polls `/health`, `/_stcore/health` and `/` | FastAPI, Streamlit and MLflow all answer |
+| Start API, Streamlit, and MLflow | `docker compose up -d` | the three services start |
+| Wait for all three web services | polls `/health`, `/_stcore/health` and `/` | FastAPI, Streamlit, and MLflow all answer |
 | Smoke test actual API prediction | `POST /predict` with the KC1 sample | the API returns class 0 or 1 and a probability between 0 and 1 |
-| Write results to the run summary | reads the training outputs | the run page shows the selected model, GMM components, sample prediction and model comparison |
+| Write results to the run summary | reads the training outputs | the run page shows the selected model, GMM components, sample prediction, and model comparison |
 
 If a step fails, the run turns red, the remaining checks are skipped and *Show logs if checks
 fail* prints the container logs. *Stop test containers* always runs at the end.
@@ -537,20 +537,20 @@ The `cd` job can push the image to GitHub Container Registry as
 1. the workflow was started by hand with **Run workflow**,
 2. on the `main` branch,
 3. with the box *After security review, publish the Docker image to GitHub Container Registry?*
-   ticked (it is unticked by default),
+   ticked (it's unticked by default),
 4. and the CI job of that same run passed.
 
-On pushes and pull requests the `cd` job always shows as *skipped*. It is kept off because Docker
+On pushes and pull requests the `cd` job always shows as *skipped*. It's kept off because Docker
 Scout reports known vulnerabilities in the image (see
 [Docker Implementation Evidence](#docker-implementation-evidence)): publish only after reviewing
-or fixing them. Even when used, CD only stores an image in a registry; it is not a live deployment,
-and the image does not contain the trained model.
+or fixing them. Even when used, CD only stores an image in a registry; it isn't a live deployment,
+and the image doesn't contain the trained model.
 
 ### Run the pipeline by hand
 
 1. Open the repository's **Actions** tab and select **KC1 - CI and manual CD**.
-2. Click **Run workflow**, keep the branch `main` and leave the publishing box unticked.
-3. Click the green **Run workflow** button, then open the new run. Each step shows a green tick or
+2. Select **Run workflow**, keep the branch `main` and leave the publishing box unticked.
+3. Select the green **Run workflow** button, then open the new run. Each step shows a green tick or
    a red cross, and the run's summary page shows the results table.
 
 ## Sharing the Docker image
@@ -559,8 +559,8 @@ Git stores the source code; the built image is shared in one of these ways:
 
 1. **Rebuild from source (recommended).** The [Build and run](#build-and-run) commands produce the
    image on any computer with Docker.
-2. **Exported archive.** The team exported `Group6_KC1_Docker_Image.tar` (309 MB). It is too large
-   for normal Git, so it is shared separately (for example inside the submission ZIP). To use it,
+2. **Exported archive.** The team exported `Group6_KC1_Docker_Image.tar` (309 MB). It's too large
+   for normal Git, so it's shared separately (for example inside the submission ZIP). To use it,
    from the project folder:
 
    ```bash
@@ -574,7 +574,7 @@ Git stores the source code; the built image is shared in one of these ways:
    rebuilding from source is the simplest option.
 3. **GitHub release.** The `.tar` can be attached to a release of this private repository
    (release files can be up to 2 GiB); only people with access to the repository can download it.
-4. **Docker Hub (optional — nothing has been published).** If a registry image is required, create
+4. **Docker Hub (optional: nothing has been published).** If a registry image is required, create
    a **private** repository on Docker Hub first, then push:
 
    ```bash
@@ -584,7 +584,7 @@ Git stores the source code; the built image is shared in one of these ways:
    ```
 
    To push one tag that runs natively on both Apple Silicon and Intel/AMD computers, build a
-   multi-platform image instead (if Docker says multi-platform builds are not supported, run
+   multi-platform image instead (if Docker says multi-platform builds aren't supported, run
    `docker buildx create --use` once first):
 
    ```bash
@@ -655,7 +655,7 @@ group6-kc1-defect-prediction/
 | `No such file ... kc1_defect_pipeline.joblib` or `deployment_config.json` | Run the trainer first: `docker compose --profile train run --rm trainer`. |
 | Dataset download error | Download `kc1.csv` from the URL in `train.py`, save it as `artifacts/kc1.csv`, run the trainer again. |
 | Streamlit says the API is unavailable | `docker compose ps`, then `docker compose logs api` and `docker compose logs ui`. |
-| Port 8000, 8501 or 5000 already in use | Stop the other application, or change the **left** port number in `compose.yaml`. |
+| Port 8000, 8501, or 5000 already in use | Stop the other application, or change the **left** port number in `compose.yaml`. |
 | Apple Silicon Mac | Docker Desktop uses the arm64 Python image; no manual x86 emulation is needed for these packages. |
 
 ## Limitations
@@ -671,7 +671,7 @@ group6-kc1-defect-prediction/
 - `requirements.txt` uses version ranges, so a later rebuild may install newer libraries and give
   slightly different numbers. To record the exact versions inside a verified image:
   `docker run --rm group6-kc1:latest python -m pip freeze > requirements-lock.txt`.
-- The API has no authentication and is published on `127.0.0.1` only: it is a local classroom
+- The API has no authentication and is published on `127.0.0.1` only: it's a local classroom
   demonstration, not an internet-facing service.
 - Docker Scout reports known vulnerabilities in the `python:3.11-slim` base layers and in the
   installed Python packages (see [Docker Implementation Evidence](#docker-implementation-evidence)).

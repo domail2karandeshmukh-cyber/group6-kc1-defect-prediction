@@ -1,6 +1,6 @@
-# Group 6 KC1 — Manual Docker build + presentation guide
+# Group 6 KC1: manual Docker build and presentation guide
 
-This is a reproducible Docker **source project**. It is not an already-built Docker image. A Docker image is created when `docker compose build` succeeds on your computer.
+This is a reproducible Docker **source project**. It isn't an already-built Docker image. A Docker image is created when `docker compose build` succeeds on your computer.
 
 ## 1. Verify Docker Desktop on your Mac
 
@@ -12,7 +12,7 @@ docker compose version
 docker info
 ```
 
-If `docker info` fails, Docker Desktop is not ready. If Docker cannot be found, open/reinstall Docker Desktop.
+If `docker info` fails, Docker Desktop isn't ready. If Docker can't be found, open/reinstall Docker Desktop.
 
 ## 2. Get the project folder
 
@@ -30,7 +30,7 @@ You should see `Dockerfile`, `compose.yaml`, `requirements.txt`, `train.py`, `ap
 
 ## 3. Two ways to build
 
-**Method A — One command (fast demo):**
+**Method A: one command (fast demo)**
 
 ```bash
 bash scripts/start_mac.sh
@@ -38,7 +38,7 @@ bash scripts/start_mac.sh
 
 The script runs exactly the Method B commands and checks the API.
 
-**Method B — Manual steps (best for learning and demonstrating):**
+**Method B: manual steps (best for learning and demonstrating)**
 
 ```bash
 docker compose build
@@ -50,13 +50,13 @@ This builds image `group6-kc1:latest` using `Dockerfile`: Python 3.11, required 
 docker image ls group6-kc1
 ```
 
-This lists the **built image**; it does not yet mean the application is running.
+This lists the **built image**; it doesn't yet mean the application is running.
 
 ```bash
 docker compose --profile train run --rm trainer
 ```
 
-This downloads the KC1 dataset if it is not already present, deduplicates it, fits the four classifiers, logs runs to MLflow, evaluates thresholds and GMM models, then exports the selected model to `artifacts/`.
+This downloads the KC1 dataset if it isn't already present, deduplicates it, fits the four classifiers, logs runs to MLflow, evaluates thresholds and GMM models, then exports the selected model to `artifacts/`.
 
 ```bash
 docker compose up -d
@@ -74,25 +74,25 @@ This lists running containers and their status.
 bash scripts/verify_mac.sh
 ```
 
-This checks the image, containers, endpoint responses and a sample prediction.
+This checks the image, containers, endpoint responses, and a sample prediction.
 
 ## 4. Open the three interfaces
 
 | Service | Local URL | Purpose |
 |---|---|---|
-| Streamlit | http://localhost:8501 | Enter the 21 code metrics and click Predict defect |
+| Streamlit | http://localhost:8501 | Enter the 21 code metrics and select Predict defect |
 | FastAPI / Swagger | http://localhost:8000/docs | Demonstrate GET /health and POST /predict |
-| MLflow | http://localhost:5000 | Show tracked classifier, threshold and GMM runs |
+| MLflow | http://localhost:5000 | Show tracked classifier, threshold, and GMM runs |
 
 ## 5. What to show the teacher
 
-1. `Dockerfile` — explain base Python image, installing packages, copying source, default command.
-2. `compose.yaml` — explain four services: trainer (on demand), API, Streamlit UI, MLflow viewer.
-3. `docker image ls group6-kc1` — proves image exists **after it has been built**.
-4. `docker compose ps` — proves services are running.
-5. `http://localhost:8000/health` and `http://localhost:8000/docs` — API reachable.
-6. `http://localhost:8501` — select *Load KC1 sample* and *Predict defect*; read the result.
-7. `http://localhost:5000` — show experiments and model metrics.
+1. `Dockerfile`: explain base Python image, installing packages, copying source, default command.
+2. `compose.yaml`: explain four services: trainer (on demand), API, Streamlit UI, MLflow viewer.
+3. `docker image ls group6-kc1`: proves image exists **after it has been built**.
+4. `docker compose ps`: proves services are running.
+5. `http://localhost:8000/health` and `http://localhost:8000/docs`: API reachable.
+6. `http://localhost:8501`: select *Load KC1 sample* and *Predict defect*; read the result.
+7. `http://localhost:5000`: show experiments and model metrics.
 
 Take screenshots of **your actual run**, not simulated screenshots.
 
@@ -116,7 +116,7 @@ If the teacher explicitly asks for a transferable image rather than files to bui
 docker save -o Group6_KC1_Docker_Image.tar group6-kc1:latest
 ```
 
-This produces a large image archive on **your Mac** after the build (309 MB for the team's build). The source code is much smaller and is *not* the same thing as an exported image. The `.tar` is not stored in GitHub; share it separately. On another computer, load it with:
+This produces a large image archive on **your Mac** after the build (309 MB for the team's build). The source code is much smaller and is *not* the same thing as an exported image. The `.tar` isn't stored in GitHub; share it separately. On another computer, load it with:
 
 ```bash
 docker load -i Group6_KC1_Docker_Image.tar
@@ -135,8 +135,8 @@ If you want to reproduce rather than simply run the supplied files:
 5. Build with `docker compose build`, train, start services, and test.
 6. Save screenshots and summarize the architecture in your own words.
 
-**Why the trainer runs separately:** You generally want to train once, then reuse the saved model for as many API predictions as you want; the API should not retrain every time it starts.
+**Why the trainer runs separately:** You generally want to train once, then reuse the saved model for as many API predictions as you want; the API shouldn't retrain every time it starts.
 
 **Important experimental limitation:** Model and threshold selection in this classroom project use the held-out test set, which can bias reported performance. Production workflows should choose models and thresholds with validation data and reserve the test set for final evaluation.
 
-**AI use:** It is fine to study this code and use assistance where allowed. Follow your teacher's rules on attribution. Do not claim to have manually built and verified a Docker image until you actually run the build and tests.
+**AI use:** It's fine to study this code and use assistance where allowed. Follow your teacher's rules on attribution. Don't claim to have manually built and verified a Docker image until you actually run the build and tests.
