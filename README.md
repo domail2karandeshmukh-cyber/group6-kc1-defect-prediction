@@ -391,7 +391,8 @@ Response for the KC1 sample (the first held-out test module):
 
 The API validates every request with Pydantic: all 21 fields are required and use the original
 KC1 column names (for example `v(g)`), every value must be a finite number, and unknown fields are
-rejected. An invalid request returns HTTP **422** with a description of the problem.
+rejected. An invalid request returns HTTP **422** with a description of the problem. That includes a
+number too large to be finite, such as `1e999`, and `NaN`: since version 1.0.1 they get a 422 too, not a 500.
 
 ## Results
 
@@ -462,13 +463,14 @@ versions may give slightly different numbers.
 
 ## Testing
 
-`tests/test_api.py` holds two API smoke tests. They're integration tests: they need the trained
+`tests/test_api.py` holds three API smoke tests. They're integration tests: they need the trained
 artifacts and are skipped automatically when no trained model is found.
 
 | Test | What it checks |
 |---|---|
 | `test_health` | `GET /health` returns 200 and reports 21 features |
 | `test_invalid_payload` | `POST /predict` with a single field is rejected with 422 |
+| `test_non_finite_values_are_refused` | `1e999`, `-1e999` and `NaN` are rejected with 422, not 500 |
 
 Run them after training, either inside the project image (no local Python needed):
 
